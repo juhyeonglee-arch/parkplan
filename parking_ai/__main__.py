@@ -17,12 +17,13 @@ def main():
     ap.add_argument("--angles", help="주차 각도 예: 90,60")
     ap.add_argument("--circ", type=float, help="동선 가중치 0(대수만)~2(동선 중시), 기본 1")
     ap.add_argument("--out")
-    ap.add_argument("--port", type=int, default=8766)
+    ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8766)))
+    ap.add_argument("--host", default=os.environ.get("PARKPLAN_HOST", "127.0.0.1"))
     ap.add_argument("--no-browser", action="store_true")
     a = ap.parse_args()
     if not a.drawing:
         from .app import serve
-        serve(a.port, not a.no_browser)
+        serve(a.port, not a.no_browser, a.host)
         return
     from . import engine, export, io_input
     from .rules import Rules

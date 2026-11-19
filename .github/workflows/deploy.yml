@@ -1,0 +1,41 @@
+name: 웹 배포 (Hugging Face Spaces)
+
+# main의 시험이 통과하면 Space로 올린다. 저장소 Settings → Secrets and variables → Actions 에
+#   Secret  HF_TOKEN : Hugging Face 쓰기 토큰
+#   Variable HF_SPACE: 아이디/parkplan
+# 이 없으면 건너뛴다.
+on:
+  workflow_run:
+    workflows: ["시험"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_SPACE: ${{ vars.HF_SPACE }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: 설정 확인
+        id: chk
+        run: |
+          if [ -z "$HF_TOKEN" ] || [ -z "$HF_SPACE" ]; then
+            echo "HF_TOKEN 또는 HF_SPACE가 없어 배포를 건너뜁니다." >> "$GITHUB_STEP_SUMMARY"
+            echo "skip=1" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.chk.outputs.skip != '1'
+        with:
+          python-version: "3.12"
+      - name: 올리기
+        if: steps.chk.outputs.skip != '1'
+        run: |
+          pip install huggingface_hub
+          url=$(python tools/deploy_hf.py | tail -1)
+          echo "배포: $url" >> "$GITHUB_STEP_SUMMARY"

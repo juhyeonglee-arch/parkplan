@@ -55,9 +55,25 @@ jobs:
           path: test-artifacts
           retention-days: 30
 
+  docker:
+    name: 웹 배포 이미지 확인
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: 이미지 만들기
+        run: docker build -f deploy/Dockerfile -t parkplan .
+      - name: 켜서 응답 확인
+        run: |
+          docker run -d --name pp -p 7860:7860 parkplan
+          for i in $(seq 60); do curl -sf http://127.0.0.1:7860/api/status && break; sleep 2; done
+          curl -sf http://127.0.0.1:7860/api/status | grep -q '"server": true'
+          curl -sf -X POST http://127.0.0.1:7860/api/sample | grep -q '"layers"'
+          docker logs pp
+
   report:
     name: PR에 결과 남기기
-    needs: test
+    needs: [test, docker]
     if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
@@ -95,8 +111,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          state="${{ needs.test.result }}"
-          if [ "$state" = "success" ]; then head="✅ **시험 통과** (Windows · Linux)"; else head="❌ **시험 실패** — 고친 뒤 다시 올립니다"; fi
+          if [ "${{ needs.test.result }}" = "success" ] && [ "${{ needs.docker.result }}" = "success" ]; then head="✅ **시험 통과** (Windows · Linux)"; else head="❌ **시험 실패** — 고친 뒤 다시 올립니다"; fi
           {
             echo "<!-- parkplan-ci -->"
             echo "$head · 커밋 ${{ github.event.pull_request.head.sha }}"
