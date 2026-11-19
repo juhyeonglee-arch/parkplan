@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+test-artifacts/
+out/
+*_주차배치/
+
+# 개인 도면·자료는 저장소에 넣지 않습니다. 예시 도면만 예외.
+*.dxf
+*.dwg
+*.3dm
+!examples/예시_대지.dxf
+*.zip
+.env

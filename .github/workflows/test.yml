@@ -1,0 +1,113 @@
+name: 시험
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: 시험 (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: "1"
+      ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest
+      - name: 화면 시험 도구 설치 (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: 불러오기 확인
+        run: python -c "import parking_ai, parking_ai.app; print('parking_ai', parking_ai.VERSION)"
+      - name: 시험 (예제 입력 · 대수 기준 · 화면 서버)
+        env:
+          RUN_HUGE: ${{ runner.os == 'Linux' && '1' || '' }}
+        run: python -m pytest tests -v --durations=0
+      - name: 결과 요약
+        if: always()
+        shell: bash
+        run: python tools/ci_summary.py test-artifacts >> "$GITHUB_STEP_SUMMARY" || true
+      - name: 결과 그림 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 시험결과-${{ runner.os }}
+          path: test-artifacts
+          retention-days: 30
+
+  report:
+    name: PR에 결과 남기기
+    needs: test
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: 시험결과-Linux
+          path: arts
+      - name: 그림을 ci-images 브랜치에 올림
+        id: img
+        shell: bash
+        run: |
+          set -e
+          dir="pr-${{ github.event.pull_request.number }}/${{ github.event.pull_request.head.sha }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          tmp=$(mktemp -d)
+          if git ls-remote --exit-code --heads origin ci-images >/dev/null; then
+            git clone --depth 1 --branch ci-images "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" "$tmp"
+          else
+            git init -q -b ci-images "$tmp"
+            git -C "$tmp" remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
+          fi
+          mkdir -p "$tmp/$dir"
+          cp arts/*.png "$tmp/$dir/" || true
+          git -C "$tmp" add -A
+          git -C "$tmp" commit -qm "PR #${{ github.event.pull_request.number }} 시험 그림" || true
+          git -C "$tmp" push -q origin ci-images
+          echo "base=https://raw.githubusercontent.com/${{ github.repository }}/ci-images/$dir" >> "$GITHUB_OUTPUT"
+      - name: PR 댓글
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state="${{ needs.test.result }}"
+          if [ "$state" = "success" ]; then head="✅ **시험 통과** (Windows · Linux)"; else head="❌ **시험 실패** — 고친 뒤 다시 올립니다"; fi
+          {
+            echo "<!-- parkplan-ci -->"
+            echo "$head · 커밋 ${{ github.event.pull_request.head.sha }}"
+            echo
+            python tools/ci_summary.py arts "${{ steps.img.outputs.base }}"
+            echo
+            echo "[전체 결과·그림 내려받기](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          } > body.md
+          id=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" --jq '[.[] | select(.body | startswith("<!-- parkplan-ci -->"))][0].id // empty')
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$id" -F body=@body.md
+          else
+            gh pr comment ${{ github.event.pull_request.number }} --body-file body.md
+          fi

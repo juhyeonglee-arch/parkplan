@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>지하주차장 배치</title>
+<style>
+@font-face{font-family:"Pretendard Variable";font-weight:45 920;font-style:normal;font-display:swap;src:url("./vendor/fonts/PretendardVariable.woff2") format("woff2-variations"),url("./vendor/fonts/PretendardVariable.woff2") format("woff2")}
+:root{--ink:#111;--sub:#6e6e73;--line:#e5e5ea;--soft:#f5f5f7;--acc:#2457d6;--acc-soft:#eef3fd;--bad:#c4321c}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:#fff;color:var(--ink);font-family:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:14px;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+input,select{font:inherit;color:var(--ink)}
+.app{display:grid;grid-template-columns:380px 1fr;height:100vh}
+aside{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.head{padding:22px 24px 14px;display:flex;align-items:baseline;gap:10px}
+.head h1{font-size:19px;font-weight:700;margin:0;letter-spacing:-.2px}
+.head .ver{font-size:12px;color:var(--sub)}
+.scroll{flex:1;overflow:auto;padding:0 24px 24px}
+section{padding:18px 0;border-top:1px solid var(--line)}
+section h2{font-size:13px;font-weight:600;margin:0 0 12px;display:flex;gap:8px;align-items:center}
+section h2 b{font-weight:600;color:var(--sub);font-variant-numeric:tabular-nums}
+.drop{border:1px dashed #c7c7cc;border-radius:12px;padding:20px 16px;text-align:center;color:var(--sub);line-height:1.6;transition:.15s}
+.drop.on{border-color:var(--acc);background:var(--acc-soft);color:var(--ink)}
+.drop strong{color:var(--ink);font-weight:600}
+.link{color:var(--acc);font-size:13px;padding:6px 0}
+.file{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.file .nm{font-weight:600;word-break:break-all}
+.muted{color:var(--sub);font-size:12.5px;line-height:1.55}
+.lay{display:grid;grid-template-columns:1fr 108px;gap:6px 10px;align-items:center}
+.lay .ln{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lay .ln small{color:var(--sub);margin-left:4px}
+select,input[type=number],input[type=text]{width:100%;background:var(--soft);border:1px solid transparent;border-radius:8px;padding:7px 9px;outline:none}
+select:focus,input:focus{border-color:var(--acc);background:#fff}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+label.f{display:block;font-size:12px;color:var(--sub);margin-bottom:5px}
+.seg{display:flex;background:var(--soft);border-radius:9px;padding:3px;margin-bottom:12px}
+.seg button{flex:1;padding:7px 0;border-radius:7px;font-size:13px;color:#444}
+.seg button.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.chips{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.chips button{padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;color:#444}
+.chips button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+details{margin-top:4px}
+summary{cursor:pointer;font-size:13px;font-weight:600;padding:6px 0;list-style:none;display:flex;justify-content:space-between}
+summary::after{content:"＋";color:var(--sub);font-weight:400}
+details[open] summary::after{content:"－"}
+.sub{font-size:12px;font-weight:600;color:var(--sub);margin:14px 0 8px}
+.sw{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px}
+.sw input{appearance:none;width:38px;height:22px;border-radius:11px;background:#d1d1d6;position:relative;cursor:pointer;transition:.15s;flex:none}
+.sw input::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px #0003;transition:.15s}
+.sw input:checked{background:var(--acc)}
+.sw input:checked::after{left:18px}
+.foot{padding:14px 24px 18px;border-top:1px solid var(--line);display:flex;gap:8px}
+.go{flex:1;min-height:46px;border-radius:999px;background:var(--ink);color:#fff;font-weight:600;font-size:15px}
+.go:disabled{background:#d1d1d6;cursor:default}
+.ghost{min-height:46px;padding:0 18px;border-radius:999px;background:var(--soft)}
+main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.bar{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);min-height:62px;flex-wrap:wrap}
+.tabs{display:flex;gap:18px}
+.tabs button{padding:6px 0;font-size:14px;color:var(--sub);border-bottom:1.5px solid transparent}
+.tabs button.on{color:var(--ink);font-weight:600;border-bottom-color:var(--ink)}
+.tabs button small{color:var(--sub);font-weight:400;margin-left:3px}
+.live{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--sub)}
+.live .sm{padding:6px 10px;font-size:12.5px;width:auto}
+.pill{padding:4px 10px;border-radius:99px;background:var(--soft);color:var(--ink);font-size:12px;white-space:nowrap}
+.pill:empty{display:none}
+.pill.busy{background:#eef3fd;color:#143c9a}
+.rampdrag{cursor:move}
+.scand{cursor:pointer}
+.scand .sp{fill:none;stroke:none;pointer-events:none}
+.scand:hover .sp{fill:rgba(36,87,214,.18);stroke:#111;stroke-width:1.5;stroke-dasharray:4 3}
+.scanleg{position:absolute;left:14px;bottom:14px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12px;display:flex;gap:8px;align-items:center}
+.scanleg i{display:inline-block;width:60px;height:8px;border-radius:4px;background:linear-gradient(90deg,#eef3fd,#2457d6)}
+.spacer{flex:1}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-bottom:1px solid var(--line)}
+.stat{padding:14px 22px;border-right:1px solid var(--line)}
+.stat:last-child{border-right:0}
+.stat .k{font-size:12px;color:var(--sub)}
+.stat .v{font-size:24px;font-weight:700;letter-spacing:-.4px;margin-top:2px;font-variant-numeric:tabular-nums}
+.stat .v small{font-size:13px;font-weight:500;color:var(--sub);margin-left:3px}
+.stat .d{font-size:12px;color:var(--sub);margin-top:2px}
+.body{flex:1;display:grid;grid-template-columns:1fr 300px;min-height:0}
+.view{position:relative;min-height:0;overflow:hidden;background:#fff}
+.view svg{width:100%;height:100%;display:block;cursor:grab}
+.view svg.drag{cursor:grabbing}
+.empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--sub);text-align:center;line-height:1.7}
+.legend{position:absolute;left:18px;bottom:14px;display:flex;gap:14px;font-size:12px;color:#444;background:#fffe;padding:6px 10px;border-radius:8px}
+.legend i{display:inline-block;width:12px;height:12px;margin-right:5px;vertical-align:-2px;border:1px solid #111}
+.zoom{position:absolute;right:14px;bottom:14px;display:flex;gap:6px}
+.zoom button{width:32px;height:32px;border-radius:8px;background:var(--soft);font-size:16px}
+.side{border-left:1px solid var(--line);overflow:auto;padding:16px 18px}
+.side h3{font-size:13px;margin:0 0 10px;font-weight:600}
+.checks{list-style:none;margin:0 0 18px;padding:0}
+.checks li{display:grid;grid-template-columns:18px 1fr;gap:6px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px;line-height:1.5}
+.checks li .o{color:var(--acc);font-weight:700}
+.checks li .x{color:var(--bad);font-weight:700}
+.checks li span.n{color:var(--sub)}
+.fb{list-style:none;margin:0 0 18px;padding:0}
+.fb li{padding:9px 0 9px 12px;border-bottom:1px solid var(--line);font-size:12.5px;line-height:1.5;position:relative}
+.fb li:before{content:"";position:absolute;left:0;top:14px;width:6px;height:6px;border-radius:3px;background:var(--sub)}
+.fb li.bad:before{background:#111}.fb li.warn:before{background:var(--acc)}.fb li.good:before{background:#c9d6f5}
+.fb li b{font-weight:600}.fb li .n{color:var(--sub)}
+.fb .go{margin-top:6px;display:inline-block;padding:4px 10px;border-radius:99px;background:var(--soft);color:var(--ink);font-size:12px;cursor:pointer;border:0}
+.fb .go.up{background:#111;color:#fff}
+.note{font-size:12.5px;color:var(--sub);margin:-4px 0 14px}
+.files{list-style:none;margin:0 0 14px;padding:0}
+.files li{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;gap:8px}
+.files li a{color:var(--acc);text-decoration:none;font-size:12.5px;white-space:nowrap}
+.files li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log{font-size:12px;color:#444;line-height:1.6;white-space:pre-wrap;font-variant-numeric:tabular-nums}
+.prog{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin:4px 0 12px}
+.prog i{display:block;height:100%;background:var(--acc);width:0;transition:width .3s}
+.err{background:#fdf1ef;color:var(--bad);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.5;margin-bottom:12px}
+.pf{font-size:12.5px;width:100%;border-collapse:collapse;margin-bottom:18px}
+.pf th,.pf td{text-align:right;padding:5px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.pf th:first-child,.pf td:first-child{text-align:left}
+.pf th{color:var(--sub);font-weight:500}
+@media (max-width:900px){.app{grid-template-columns:1fr;height:auto}.body{grid-template-columns:1fr}.view{height:60vh}.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <div class="head"><h1>지하주차장 배치</h1><span class="ver" id="ver"></span></div>
+  <div class="scroll">
+    <section>
+      <h2><b>01</b>도면 넣기</h2>
+      <div id="dropWrap">
+        <div class="drop" id="drop"><strong>DXF · 3dm</strong>을 끌어다 놓거나<br><button class="link" id="pick">파일 고르기</button><input type="file" id="fileIn" accept=".dxf,.3dm,.dwg" hidden></div>
+        <button class="link" id="sample">예시 도면으로 해보기</button>
+        <p class="muted">대지(지하 외벽선)·코어·경사로를 닫힌 폴리라인으로 그린 도면. DWG는 캐드에서 DXF로 저장해서 넣어 주세요.</p>
+      </div>
+      <div id="fileInfo" hidden>
+        <div class="file"><span class="nm" id="fname"></span><button class="link" id="chg">바꾸기</button></div>
+        <div class="row" style="margin-top:10px">
+          <div><label class="f">도면 단위</label><select id="unit"><option value="mm">mm</option><option value="cm">cm</option><option value="m">m</option></select></div>
+          <div><label class="f">대지 넓이</label><div id="area" style="padding:7px 0;font-weight:600"></div></div>
+        </div>
+      </div>
+    </section>
+    <section id="secLayers" hidden>
+      <h2><b>02</b>레이어 역할</h2>
+      <div class="lay" id="layers"></div>
+      <p class="muted" style="margin-top:10px">이름으로 짐작했습니다. 다르면 바꿔 주세요. 대지경계는 가장 큰 닫힌 선 하나를 씁니다.</p>
+    </section>
+    <section>
+      <h2><b>03</b>조건</h2>
+      <div class="row">
+        <div><label class="f">지하 층수</label><input type="number" id="floors" min="1" max="10" value="2"></div>
+        <div><label class="f">층고 (m)</label><input type="number" id="floor_h" step="0.1" value="3.6"></div>
+      </div>
+      <label class="f">주차 각도 (여러 개 고르면 모두 비교)</label>
+      <div class="chips" id="angles"><button data-v="90" class="on">직각</button><button data-v="60">60°</button><button data-v="45">45°</button></div>
+      <label class="f">경사로</label>
+      <div class="seg" id="ramp"><button data-v="drawn" class="on">그린 것</button><button data-v="auto">자동 찾기</button><button data-v="none">없음</button></div>
+      <label class="f">동선 (대수와 함께 얼마나 볼지)</label>
+      <div class="seg" id="circ"><button data-v="0">대수만</button><button data-v="1" class="on">보통</button><button data-v="2">동선 중시</button></div>
+      <p class="muted" style="margin:-4px 0 12px">순서: 코어·경사로 고정 → 기둥 없이 주차·동선 → 기둥 배열</p>
+      <label class="f">찾는 정도</label>
+      <div class="seg" id="effort"><button data-v="fast">빠르게</button><button data-v="normal" class="on">보통</button><button data-v="thorough">꼼꼼히</button></div>
+      <details>
+        <summary>세부 설정 · 법규 기준값</summary>
+        <div class="sub">주차단위구획 (너비 × 길이, m)</div>
+        <div class="row"><div><label class="f">일반형</label><div class="row" style="margin:0"><input type="number" step="0.1" id="stall_w" value="2.5"><input type="number" step="0.1" id="stall_l" value="5.0"></div></div>
+          <div><label class="f">확장형</label><div class="row" style="margin:0"><input type="number" step="0.1" id="ext_w" value="2.6"><input type="number" step="0.1" id="ext_l" value="5.2"></div></div></div>
+        <div class="row"><div><label class="f">경형</label><div class="row" style="margin:0"><input type="number" step="0.1" id="compact_w" value="2.0"><input type="number" step="0.1" id="compact_l" value="3.6"></div></div>
+          <div><label class="f">장애인전용</label><div class="row" style="margin:0"><input type="number" step="0.1" id="acc_w" value="3.3"><input type="number" step="0.1" id="acc_l" value="5.0"></div></div></div>
+        <div class="sub">차로 너비 (m)</div>
+        <div class="row3"><div><label class="f">직각</label><input type="number" step="0.1" id="aisle_90" value="6.0"></div>
+          <div><label class="f">60° 일방/양방</label><div class="row" style="margin:0;gap:4px"><input type="number" step="0.1" id="aisle_60_one" value="4.5"><input type="number" step="0.1" id="aisle_60_two" value="5.5"></div></div>
+          <div><label class="f">45° 일방/양방</label><div class="row" style="margin:0;gap:4px"><input type="number" step="0.1" id="aisle_45_one" value="3.5"><input type="number" step="0.1" id="aisle_45_two" value="5.0"></div></div></div>
+        <div class="sw"><span>출입구(경사로) 2개 이상 · 일방통행</span><input type="checkbox" id="two_entrances"></div>
+        <div class="row"><div><label class="f">연결 차로 너비</label><input type="number" step="0.1" id="link_aisle" value="6.0"></div><div></div></div>
+        <div class="sub">비율</div>
+        <div class="row"><div><label class="f">확장형 비율 (%)</label><input type="number" id="ext_ratio" value="30"></div>
+          <div><label class="f">적용 대수 (이상)</label><input type="number" id="ext_threshold" value="50"></div></div>
+        <div class="row"><div><label class="f">장애인 비율 (%)</label><input type="number" step="0.5" id="acc_ratio" value="3"></div>
+          <div><label class="f">경형 법정 인정 (%)</label><input type="number" id="compact_legal_ratio" value="10"></div></div>
+        <div class="sw"><span>일반이 안 들어가는 자리를 경형으로 채우기</span><input type="checkbox" id="compact_fill" checked></div>
+        <div class="sub">구조 · 대지</div>
+        <div class="row"><div><label class="f">기둥 (줄 방향 × 깊이, m)</label><div class="row" style="margin:0"><input type="number" step="0.05" id="column_w" value="0.7"><input type="number" step="0.05" id="column_d" value="0.5"></div></div>
+          <div><label class="f">기둥 간격 최소~최대 (m)</label><div class="row" style="margin:0"><input type="number" step="0.1" id="span_min" value="5.0"><input type="number" step="0.1" id="span_max" value="9.0"></div></div></div>
+        <div class="sub">동선 · 전기차</div>
+        <div class="row"><div><label class="f">막다른 차로 허용 길이 (m)</label><input type="number" step="0.5" id="dead_end_ok" value="6"></div>
+          <div><label class="f">전기차 전용구획 (%)</label><input type="number" step="0.5" id="ev_ratio" value="5"></div></div>
+        <div class="row"><div><label class="f">경계선에서 띄우기 (m)</label><input type="number" step="0.1" id="wall_offset" value="0"></div>
+          <div><label class="f">코어 둘레 띄우기 (m)</label><input type="number" step="0.1" id="core_clear" value="0"></div></div>
+        <div class="sub">경사로 (자동 찾기일 때)</div>
+        <div class="row"><div><label class="f">경사도 (%)</label><input type="number" id="ramp_slope" value="17"></div>
+          <div><label class="f">앞뒤 완화 여유 (m)</label><input type="number" step="0.5" id="ramp_extra" value="2"></div></div>
+        <div class="sub">목표</div>
+        <div class="row"><div><label class="f">법정 주차대수 (선택)</label><input type="number" id="target_total" placeholder="넣으면 필요 층수 계산"></div><div></div></div>
+        <p class="muted">기본값: 주차장법 시행규칙 제3조·제6조·제11조. 60°·45° 차로 너비와 장애인 비율(지자체 조례)은 사업지 기준으로 확인하세요.</p>
+      </details>
+    </section>
+  </div>
+  <div class="foot"><button class="go" id="go" disabled>배치 찾기</button><button class="ghost" id="stop" hidden>멈추기</button></div>
+</aside>
+<main>
+  <div class="bar">
+    <div class="tabs" id="alts"></div>
+    <div class="spacer"></div>
+    <div class="live" id="liveBar" hidden><span class="tip">경사로를 끌어 옮기면 다시 찾습니다</span><button class="ghost sm" id="rotRamp">경사로 90° 돌리기</button><button class="ghost sm" id="scanRamp" title="고른 경사로를 대지 둘레를 따라 옮겨 가며 대수를 비교합니다">경사로 자리 추천</button><span class="pill" id="liveMsg"></span></div>
+    <div class="seg" id="floorSeg" style="margin:0;width:150px" hidden><button data-v="0" class="on">B1</button><button data-v="1">B2~</button></div>
+  </div>
+  <div class="stats" id="stats" hidden></div>
+  <div class="body">
+    <div class="view" id="view">
+      <svg id="svg"></svg>
+      <div class="empty" id="empty">도면을 넣으면 여기에 보입니다.<br><span class="muted">끌어서 옮기고, 휠로 확대합니다.</span></div>
+      <div class="legend" id="legend" hidden><span><i style="background:#fff"></i>일반</span><span><i style="background:#eef3fd;border-color:#2457d6"></i>확장</span><span><i style="border-style:dashed;border-color:#5a96e6"></i>경형</span><span><i style="background:#2457d6;border-color:#2457d6"></i>장애인</span><span><i style="background:#eef3fd;border-color:#2457d6"></i>EV 전기차</span><span><i style="border:0;border-top:2px dashed #2457d6;height:0;margin-top:6px"></i>주 동선</span><span><i style="border:0;border-top:2px dashed #9db8ef;height:0;margin-top:6px"></i>부 동선</span><span><i style="background:#eceef2;border-color:#eceef2"></i>차로</span><span><i style="background:#111"></i>기둥</span></div>
+      <div class="zoom"><button id="zin" title="확대">＋</button><button id="zout" title="축소">－</button><button id="zfit" title="맞추기">⤢</button></div>
+    </div>
+    <div class="side" id="side">
+      <h3>진행</h3>
+      <div class="prog" id="prog" hidden><i></i></div>
+      <div id="err"></div>
+      <div class="log" id="log"><span class="muted">아직 찾지 않았습니다.</span></div>
+    </div>
+  </div>
+</main>
+</div>
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let SCANR=null, scanTimer=null;
+let SRC=null, RES=null, ALT=0, FLOOR=0, VIEW=null, timer=null, RAMPS=null, RSEL=0, BASEALT=0, liveBusy=false, livePending=false, lastLive=0, OUT=null;
+const ROLES=[["site","대지경계"],["core","코어"],["ramp","경사로"],["obstacle","장애물"],["none","안 씀"]];
+const ROLE_STYLE={site:"fill:none;stroke:#111;stroke-width:1.4",core:"fill:#d9d9d9;stroke:#444;stroke-width:.8",ramp:"fill:#e7eefc;stroke:#2457d6;stroke-width:1",obstacle:"fill:#f2f2f2;stroke:#888;stroke-dasharray:4 3",none:"fill:none;stroke:#c7c7cc;stroke-width:.6"};
+
+fetch("/api/status").then(r=>r.json()).then(d=>{$("#ver").textContent="v"+d.version});
+
+// ---------- 세그먼트·칩
+$$(".seg").forEach(g=>g.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;g.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));if(g.id==="floorSeg"){FLOOR=+b.dataset.v;draw()}}));
+$$(".chips").forEach(g=>g.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;b.classList.toggle("on");if(!g.querySelector(".on"))b.classList.add("on")}));
+const segv=id=>$(`#${id} .on`).dataset.v, chipv=id=>$$(`#${id} .on`).map(b=>b.dataset.v);
+
+// ---------- 파일
+const drop=$("#drop");
+$("#pick").onclick=()=>$("#fileIn").click();
+$("#fileIn").onchange=e=>e.target.files[0]&&upload(e.target.files[0]);
+["dragenter","dragover"].forEach(t=>document.addEventListener(t,e=>{e.preventDefault();drop.classList.add("on")}));
+["dragleave","drop"].forEach(t=>document.addEventListener(t,e=>{e.preventDefault();if(t==="drop"||e.target===drop)drop.classList.remove("on")}));
+document.addEventListener("drop",e=>{const f=e.dataTransfer.files[0];if(f)upload(f)});
+$("#sample").onclick=()=>post("/api/sample").then(loaded);
+$("#chg").onclick=()=>{$("#dropWrap").hidden=false;$("#fileInfo").hidden=true};
+
+function post(u,body,headers){return fetch(u,{method:"POST",body,headers}).then(async r=>{const d=await r.json();if(!r.ok||d.error)throw new Error(d.error||"오류");return d}).catch(e=>{showErr(e.message);throw e})}
+function upload(f){showErr("");post("/api/open",f,{"X-Name":encodeURIComponent(f.name)}).then(loaded)}
+function showErr(m){$("#err").innerHTML=m?`<div class="err">${esc(m)}</div>`:""}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+function loaded(d){
+  SRC=d;RES=null;showErr("");
+  $("#dropWrap").hidden=true;$("#fileInfo").hidden=false;$("#fname").textContent=d.file;
+  $("#unit").value=d.unit||"mm";
+  $("#secLayers").hidden=false;
+  $("#layers").innerHTML=d.layers.map((l,i)=>`<div class="ln" title="${esc(l.name)}">${esc(l.name)}<small>${l.count}</small></div><select data-i="${i}">${ROLES.map(([v,t])=>`<option value="${v}" ${v===l.role?"selected":""}>${t}</option>`).join("")}</select>`).join("");
+  $$("#layers select").forEach(s=>s.onchange=()=>{SRC.layers[s.dataset.i].role=s.value;drawInput();updArea()});
+  if(!d.layers.some(l=>l.role==="ramp")) $$("#ramp button").forEach(b=>b.classList.toggle("on",b.dataset.v==="auto"));
+  $("#go").disabled=false;$("#alts").innerHTML="";$("#stats").hidden=true;$("#floorSeg").hidden=true;$("#legend").hidden=true;
+  $("#log").innerHTML='<span class="muted">조건을 확인하고 배치 찾기를 누르세요.</span>';
+  updArea();drawInput(true);
+}
+function geoScale(){return {mm:1000,cm:100,m:1}[$("#unit").value]/ (SRC.scale||1)}
+$("#unit").onchange=()=>{updArea();drawInput(true)};
+function updArea(){
+  if(!SRC)return;const k=1/geoScale();
+  const sites=SRC.layers.filter(l=>l.role==="site");
+  const a=sites.length?Math.max(...sites.map(l=>l.area)):0;
+  $("#area").textContent=a? (a*k*k).toLocaleString("ko",{maximumFractionDigits:0})+" ㎡":"—";
+}
+
+// ---------- 그리기
+const svg=$("#svg");
+function pts(p,k=1){return p.map(q=>(q[0]*k).toFixed(3)+","+(-q[1]*k).toFixed(3)).join(" ")}
+function setView(b,force){
+  if(VIEW&&!force)return applyView();
+  const w=b[2]-b[0],h=b[3]-b[1],m=Math.max(w,h)*0.06;
+  VIEW={x:b[0]-m,y:-b[3]-m,w:w+2*m,h:h+2*m};applyView();
+}
+function applyView(){svg.setAttribute("viewBox",`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`)}
+function bbox(polys){let b=[1e18,1e18,-1e18,-1e18];polys.forEach(p=>p.forEach(([x,y])=>{b[0]=Math.min(b[0],x);b[1]=Math.min(b[1],y);b[2]=Math.max(b[2],x);b[3]=Math.max(b[3],y)}));return b}
+function drawInput(fit){
+  if(!SRC)return;$("#empty").hidden=true;const k=1/geoScale();
+  let html="",all=[];
+  SRC.geo.forEach((g,i)=>{const role=SRC.layers.find(l=>l.name===g.name)?.role||"none";
+    g.polys.forEach(p=>{all.push(p.map(q=>[q[0]*k,q[1]*k]));html+=`<polygon points="${pts(p,k)}" style="${ROLE_STYLE[role]}" vector-effect="non-scaling-stroke"/>`})});
+  svg.innerHTML=html;setView(bbox(all),fit);
+}
+function draw(fit){
+  if(!RES)return drawInput();
+  $("#empty").hidden=true;
+  const F=RES[ALT].floors[Math.min(FLOOR,RES[ALT].floors.length-1)];
+  const ns='vector-effect="non-scaling-stroke"';
+  let h="";
+  F.site.forEach(p=>h+=`<polygon points="${pts(p)}" style="fill:#fafafa;stroke:#111;stroke-width:1.4" ${ns}/>`);
+  F.drive.forEach(d=>{let path="M"+d.o.map(q=>q[0]+","+(-q[1])).join("L")+"Z";d.h.forEach(r=>path+="M"+r.map(q=>q[0]+","+(-q[1])).join("L")+"Z");h+=`<path d="${path}" fill-rule="evenodd" style="fill:#eceef2"/>`});
+  F.cores.forEach(p=>h+=`<polygon points="${pts(p)}" style="fill:url(#hatch);stroke:#444;stroke-width:.8" ${ns}/>`);
+  if(!RAMPS)RAMPS=F.ramp.map(p=>p.map(q=>[q[0],q[1]]));
+  RAMPS.forEach((p,i)=>h+=`<polygon class="rampdrag" data-i="${i}" points="${pts(p)}" style="fill:url(#hatchb);stroke:#2457d6;stroke-width:${i===RSEL?2:1}" ${ns}><title>끌어서 옮기기</title></polygon>`);
+  (F.grid||[]).forEach(l=>h+=`<polyline points="${pts(l)}" style="fill:none;stroke:#a5a5a5;stroke-width:.6;stroke-dasharray:8 2 1 2" ${ns}/>`);
+  let scanTop="";
+  if(SCANR&&SCANR.length&&FLOOR===0){
+    const ok=SCANR.filter(c=>c.ok),lo=Math.min(...ok.map(c=>c.total)),hi=Math.max(...ok.map(c=>c.total)),cur=SCANR.find(c=>c.current);
+    const col=t=>{const f=hi>lo?(t-lo)/(hi-lo):1;const m=(a,b)=>Math.round(a+(b-a)*f);return `rgb(${m(238,36)},${m(243,87)},${m(253,214)})`};
+    SCANR.forEach((c,i)=>{if(c.current)return;const best=c.ok&&c.total===hi;
+      const cx=c.poly.slice(0,4).reduce((a,q)=>[a[0]+q[0]/4,a[1]+q[1]/4],[0,0]);
+      const d=cur?c.total-cur.total:0;
+      const fr=hi>lo?(c.total-lo)/(hi-lo):1;
+      scanTop+=`<g class="scand" data-i="${i}"><polygon class="sp" points="${pts(c.poly)}" ${ns}/><circle cx="${cx[0]}" cy="${-cx[1]}" r="${best?2.1:1.7}" style="fill:${c.ok?col(c.total):"#eee"};stroke:${best?"#111":"#fff"};stroke-width:${best?2:1}" ${ns}><title>이 자리에 경사로: ${c.total}대${cur?` (지금 자리 대비 ${d>=0?"+":""}${d})`:""}${c.ok?"":" · 법규 미충족"} — 누르면 이 배치를 엽니다</title></circle><text x="${cx[0]}" y="${-cx[1]}" font-size="1.25" text-anchor="middle" dominant-baseline="central" fill="${fr>.5?"#fff":"#143c9a"}" font-weight="700" style="pointer-events:none">${c.total}</text></g>`});
+  }
+  const st={N:"fill:#fff;stroke:#111;stroke-width:.6",E:"fill:#fff;stroke:#2457d6;stroke-width:.7",C:"fill:#fff;stroke:#5a96e6;stroke-width:.7;stroke-dasharray:3 2",A:"fill:#2457d6;stroke:#143c9a;stroke-width:.7"};
+  F.stalls.forEach(s=>{const sty=s.ev?"fill:#eef3fd;stroke:#2457d6;stroke-width:.7":st[s.k];
+    h+=`<polygon points="${pts(s.p)}" style="${sty}" ${ns}><title>${s.n} · ${s.ev?"전기차":{N:"일반",E:"확장",C:"경형",A:"장애인"}[s.k]}</title></polygon>`;
+    const c=s.p.slice(0,4).reduce((a,q)=>[a[0]+q[0]/4,a[1]+q[1]/4],[0,0]);
+    if(s.k!=="A")h+=`<line x1="${s.p[0][0]}" y1="${-s.p[0][1]}" x2="${s.p[2][0]}" y2="${-s.p[2][1]}" style="stroke:#cfcfcf;stroke-width:.4" ${ns}/>`;
+    h+=`<text x="${c[0].toFixed(2)}" y="${(-c[1]).toFixed(2)}" font-size="0.9" text-anchor="middle" dominant-baseline="central" fill="${s.k==="A"?"#fff":s.ev?"#143c9a":"#888"}" font-weight="${s.ev?700:400}">${s.ev?"EV":s.n}</text>`});
+  F.columns.forEach(p=>h+=`<polygon points="${pts(p)}" style="fill:#111"/>`);
+  h+=scanTop;
+  (F.flows||[]).forEach(f=>h+=`<polyline points="${pts(f.l)}" style="fill:none;stroke:${f.k==="main"?"#2457d6":"#9db8ef"};stroke-width:${f.k==="main"?3:1.6};stroke-dasharray:7 4;stroke-linecap:round" ${ns}/>`);
+  (F.arrows||[]).forEach(a=>{const ang=Math.atan2(-a[3],a[2])*180/Math.PI;h+=`<g transform="translate(${a[0]},${-a[1]}) rotate(${ang.toFixed(1)})"><polygon points="1.5,0 0.15,-0.7 0.15,-0.3 -1.5,-0.3 -1.5,0.3 0.15,0.3 0.15,0.7" style="fill:#2457d6"/></g>`});
+  (F.dead||[]).forEach(q=>h+=`<g><rect x="${q[0]-1.3}" y="${-q[1]-0.6}" width="2.6" height="1.2" rx=".3" style="fill:#fff;stroke:#143c9a;stroke-width:.8" ${ns}/><text x="${q[0]}" y="${-q[1]}" font-size="0.8" text-anchor="middle" dominant-baseline="central" fill="#143c9a">회차</text></g>`);
+  svg.innerHTML=`<defs><pattern id="hatch" width="1" height="1" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="1" height="1" fill="#e2e2e2"/><line x1="0" y1="0" x2="0" y2="1" stroke="#888" stroke-width=".18"/></pattern><pattern id="hatchb" width="1.2" height="1.2" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="1.2" height="1.2" fill="#eef3fd"/><line x1="0" y1="0" x2="0" y2="1.2" stroke="#2457d6" stroke-width=".15"/></pattern></defs>`+h;
+  setView(bbox(F.site),fit);
+}
+// 옮기기·확대
+let dragging=null;
+let rdrag=null;
+svg.addEventListener("pointerdown",e=>{const t=e.target.closest&&e.target.closest(".rampdrag");
+  if(t&&RES&&!RES[ALT].stats.zones){RSEL=+t.dataset.i;rdrag={x:e.clientX,y:e.clientY,orig:RAMPS[RSEL].map(q=>[q[0],q[1]]),moved:false};svg.setPointerCapture(e.pointerId);e.stopImmediatePropagation();return}},true);
+svg.addEventListener("pointermove",e=>{if(!rdrag)return;e.stopImmediatePropagation();
+  const r=svg.getBoundingClientRect(),s=Math.max(VIEW.w/r.width,VIEW.h/r.height);
+  let dx=(e.clientX-rdrag.x)*s, dy=-(e.clientY-rdrag.y)*s;dx=Math.round(dx*4)/4;dy=Math.round(dy*4)/4;
+  if(dx||dy)rdrag.moved=true;
+  RAMPS[RSEL]=rdrag.orig.map(q=>[q[0]+dx,q[1]+dy]);
+  const el=svg.querySelector(`.rampdrag[data-i="${RSEL}"]`);if(el)el.setAttribute("points",pts(RAMPS[RSEL]));
+  if(Date.now()-lastLive>900)liveRun();},true);
+svg.addEventListener("pointerup",e=>{if(!rdrag)return;e.stopImmediatePropagation();const m=rdrag.moved;rdrag=null;if(m)liveRun()},true);
+$("#rotRamp").onclick=()=>{if(!RAMPS||!RAMPS.length)return;const p=RAMPS[RSEL],n=p.length-1;
+  const c=p.slice(0,n).reduce((a,q)=>[a[0]+q[0]/n,a[1]+q[1]/n],[0,0]);
+  RAMPS[RSEL]=p.map(q=>[c[0]-(q[1]-c[1]),c[1]+(q[0]-c[0])]);draw();liveRun()};
+$("#scanRamp").onclick=()=>{
+  if(!RES)return;clearTimeout(scanTimer);SCANR=null;
+  $("#liveMsg").className="pill busy";$("#liveMsg").textContent="경사로 자리 후보를 돌려 보는 중…";
+  post("/api/ramp_scan",JSON.stringify({alt:BASEALT,ramp:RSEL,ramps:RAMPS}),{"Content-Type":"application/json"}).then(()=>scanPoll()).catch(()=>{$("#liveMsg").className="pill";$("#liveMsg").textContent=""});
+};
+function scanPoll(){fetch("/api/ramp_scan").then(r=>r.json()).then(d=>{
+  if(d.state==="running"){$("#liveMsg").textContent=`경사로 자리 ${d.i}/${d.n||"?"} 계산 중…`;scanTimer=setTimeout(scanPoll,700);return}
+  $("#liveMsg").className="pill";
+  if(d.state==="error"){$("#liveMsg").textContent=d.error||"오류";return}
+  SCANR=d.results;const ok=SCANR.filter(c=>c.ok);const cur=SCANR.find(c=>c.current);
+  if(!ok.length){$("#liveMsg").textContent="법규를 지키는 자리가 없습니다";draw();return}
+  const best=ok.reduce((a,c)=>c.total>a.total?c:a);
+  $("#liveMsg").textContent=`후보 ${SCANR.length-1}곳(대수만 비교) · 가장 좋은 자리 ${best.total}대${cur?` (지금 자리 ${cur.total}대)`:""} · 동그라미를 누르면 그 배치를 엽니다`;
+  draw();
+})}
+svg.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest(".scand");if(!t||!SCANR)return;
+  const c=SCANR[+t.dataset.i];RAMPS[RSEL]=c.poly.map(q=>[q[0],q[1]]);draw();liveRun()});
+function liveRun(){
+  if(RES&&RES[BASEALT]&&RES[BASEALT].stats.zones){RAMPS=null;draw();return}
+  lastLive=Date.now();
+  if(liveBusy){livePending=true;return}
+  liveBusy=true;livePending=false;
+  $("#liveMsg").className="pill busy";$("#liveMsg").textContent="다시 찾는 중…";
+  const sent=RAMPS.map(p=>p.map(q=>[q[0],q[1]]));
+  fetch("/api/live",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({alt:BASEALT,ramps:sent})}).then(r=>r.json()).then(d=>{
+    liveBusy=false;
+    if(livePending){liveRun();return}
+    if(d.error){$("#liveMsg").className="pill";$("#liveMsg").textContent=d.error;return}
+    if(d.stale)return;
+    RES[d.alt]=d.result;RES.length=d.alt+1;
+    const tot=d.result.stats.total_legal,diff=tot-d.base_total;
+    $("#liveMsg").className="pill";$("#liveMsg").textContent=`옮긴 자리 ${tot}대 (안 ${BASEALT+1} 대비 ${diff>=0?"+":""}${diff}) · ${d.seconds}초`;
+    tabs();selectAlt(d.alt,false);
+  }).catch(e=>{liveBusy=false;$("#liveMsg").className="pill";$("#liveMsg").textContent="오류: "+e.message});
+}
+svg.addEventListener("pointerdown",e=>{if(!VIEW)return;dragging={x:e.clientX,y:e.clientY,v:{...VIEW}};svg.classList.add("drag");svg.setPointerCapture(e.pointerId)});
+svg.addEventListener("pointermove",e=>{if(!dragging)return;const r=svg.getBoundingClientRect(),s=Math.max(VIEW.w/r.width,VIEW.h/r.height);VIEW.x=dragging.v.x-(e.clientX-dragging.x)*s;VIEW.y=dragging.v.y-(e.clientY-dragging.y)*s;applyView()});
+svg.addEventListener("pointerup",()=>{dragging=null;svg.classList.remove("drag")});
+function zoom(f,cx,cy){if(!VIEW)return;cx??=VIEW.x+VIEW.w/2;cy??=VIEW.y+VIEW.h/2;VIEW.x=cx-(cx-VIEW.x)*f;VIEW.y=cy-(cy-VIEW.y)*f;VIEW.w*=f;VIEW.h*=f;applyView()}
+svg.addEventListener("wheel",e=>{e.preventDefault();const r=svg.getBoundingClientRect(),s=Math.max(VIEW.w/r.width,VIEW.h/r.height);
+  const ox=(r.width-VIEW.w/s)/2, oy=(r.height-VIEW.h/s)/2;zoom(e.deltaY>0?1.12:1/1.12,VIEW.x+(e.clientX-r.left-ox)*s,VIEW.y+(e.clientY-r.top-oy)*s)},{passive:false});
+$("#zin").onclick=()=>zoom(1/1.25);$("#zout").onclick=()=>zoom(1.25);$("#zfit").onclick=()=>RES?draw(true):drawInput(true);
+
+// ---------- 찾기
+function rules(){
+  const n=id=>{const v=$("#"+id).value;return v===""?undefined:+v};
+  return {floors:n("floors"),floor_h:n("floor_h"),park_angles:chipv("angles").map(Number),ramp_mode:segv("ramp"),effort:segv("effort"),
+    circ_weight:+segv("circ"),column_d:n("column_d"),span_min:n("span_min"),span_max:n("span_max"),dead_end_ok:n("dead_end_ok"),ev_ratio:n("ev_ratio")/100,stall_w:n("stall_w"),stall_l:n("stall_l"),ext_w:n("ext_w"),ext_l:n("ext_l"),compact_w:n("compact_w"),compact_l:n("compact_l"),
+    acc_w:n("acc_w"),acc_l:n("acc_l"),aisle_90:n("aisle_90"),aisle_60_one:n("aisle_60_one"),aisle_60_two:n("aisle_60_two"),aisle_45_one:n("aisle_45_one"),aisle_45_two:n("aisle_45_two"),
+    two_entrances:$("#two_entrances").checked,link_aisle:n("link_aisle"),ext_ratio:n("ext_ratio")/100,ext_threshold:n("ext_threshold"),acc_ratio:n("acc_ratio")/100,
+    compact_legal_ratio:n("compact_legal_ratio")/100,compact_fill:$("#compact_fill").checked,column_w:n("column_w"),
+    wall_offset:n("wall_offset"),core_clear:n("core_clear"),ramp_slope:n("ramp_slope")/100,ramp_extra:n("ramp_extra"),target_total:n("target_total")||0};
+}
+$("#go").onclick=()=>{
+  if(!SRC)return;showErr("");
+  const mapping={};SRC.layers.forEach(l=>mapping[l.name]=l.role);
+  post("/api/run",JSON.stringify({id:SRC.id,mapping,rules:rules(),unit:$("#unit").value}),{"Content-Type":"application/json"}).then(()=>{
+    $("#go").disabled=true;$("#go").textContent="찾는 중…";$("#stop").hidden=false;$("#prog").hidden=false;poll()});
+};
+$("#stop").onclick=()=>post("/api/stop");
+function poll(){clearTimeout(timer);fetch("/api/status").then(r=>r.json()).then(d=>{
+  const p=d.progress, frac=p?((p.stage-1)+p.i/p.n)/3:0.02;$("#prog i").style.width=(frac*100).toFixed(0)+"%";
+  $("#log").textContent=d.log.join("\n")+(d.state==="running"?`\n… ${d.elapsed}초`:"");
+  if(d.state==="running"){timer=setTimeout(poll,500);return}
+  $("#go").disabled=false;$("#go").textContent="배치 찾기";$("#stop").hidden=true;$("#prog").hidden=true;
+  if(d.state==="error"){showErr(d.error);return}
+  if(d.state==="done")fetch("/api/status?full=1").then(r=>r.json()).then(done);
+})}
+function done(d){
+  RES=d.results;ALT=0;FLOOR=0;
+  OUT=d.out;RAMPS=null;RSEL=0;BASEALT=0;SCANR=null;$("#liveBar").hidden=false;$("#liveMsg").textContent="";
+  tabs();
+  $("#floorSeg").hidden=RES[0].stats.floors<2;$$("#floorSeg button").forEach((b,i)=>b.classList.toggle("on",i===0));
+  $("#legend").hidden=false;stats();draw(true);files(d.files,d.out);
+}
+function tabs(){
+  $("#alts").innerHTML=RES.map((r,i)=>`<button data-i="${i}" class="${i===ALT?"on":""}">${esc(r.stats.tab||("안 "+(i+1)))} <small>${r.stats.wall_text?esc(r.stats.wall_text)+" · ":""}${r.stats.total_legal}대 · ${r.stats.circulation.avg_drive}m</small></button>`).join("");
+  $$("#alts button").forEach(b=>b.onclick=()=>selectAlt(+b.dataset.i,true));
+}
+function selectAlt(i,resetRamp){
+  ALT=i;$$("#alts button").forEach(x=>x.classList.toggle("on",+x.dataset.i===i));
+  if(resetRamp){RAMPS=null;SCANR=null;if(RES[i].stats.label!=="경사로이동")BASEALT=i}
+  const zn=!!RES[i].stats.zones;
+  $("#rotRamp").hidden=zn;$("#scanRamp").hidden=zn;
+  $("#liveBar .tip").textContent=zn?"구역별 방향 안은 경사로 끌기·자리 추천을 쓰지 않습니다 (다른 안에서 쓰세요)":"경사로를 끌어 옮기면 다시 찾습니다";
+  stats();draw();
+  post("/api/export",JSON.stringify({alt:ALT}),{"Content-Type":"application/json"}).then(x=>files(x.files,OUT));
+}
+function stats(){
+  const s=RES[ALT].stats,b1=s.per_floor[0],c=s.circulation,ph=s.phase;
+  $("#stats").hidden=false;
+  $("#stats").innerHTML=`
+   <div class="stat"><div class="k">B1</div><div class="v">${b1.legal}<small>대</small></div><div class="d">일반 ${b1.일반} · 확장 ${b1.확장} · 전기차 ${b1.전기차} · 경형 ${b1.경형} · 장애인 ${b1.장애인}</div></div>
+   <div class="stat"><div class="k">전체 ${s.floors}개 층 법정</div><div class="v">${s.total_legal}<small>대</small></div><div class="d">${s.need_floors?`목표에 필요한 층수 ${s.need_floors}개`:`구획 ${s.total_physical}면`}</div></div>
+   <div class="stat"><div class="k">동선 (B1)</div><div class="v">${c.avg_drive}<small>m 평균 주행</small></div><div class="d">막다른 차로 ${c.dead_ends}곳 · 순환 ${c.loops} · 교차 ${c.t_junctions+c.crossings}곳</div></div>
+   <div class="stat"><div class="k">기둥</div><div class="v">${ph.with_columns}<small>/${ph.no_columns}면</small></div><div class="d">기둥 넣기 전 → 후 · 간격 ${s.spans.length?Math.min(...s.spans)+"~"+Math.max(...s.spans)+"m":"-"} · 대당 ${s.area_per_stall}㎡</div></div>`;
+  const side=$("#side");
+  side.querySelectorAll(".res").forEach(x=>x.remove());
+  const div=document.createElement("div");div.className="res";
+  const fb=s.feedback||[];
+  const fbh=fb.length?`<h3>피드백</h3>${s.alt_note?`<div class="note">${esc(s.alt_note)}</div>`:""}<ul class="fb">${fb.map(f=>`<li class="${f.level}"><b>${esc(f.title)}</b><br><span class="n">${esc(f.detail)}</span>${(f.alts||[]).filter(a=>a.index<RES.length&&a.index!==ALT).map(a=>`<br><button class="go ${a.diff>0?"up":""}" data-i="${a.index}">${esc(a.text)} 보기 · ${a.total}대 (${a.diff>=0?"+":""}${a.diff})</button>`).join("")}</li>`).join("")}</ul>`:"";
+  div.innerHTML=fbh+`<h3>법규 확인</h3><ul class="checks">${s.checks.map(c=>`<li><span class="${c.ok?"o":"x"}">${c.ok?"○":"×"}</span><span>${esc(c.item)}<br><span class="n">기준 ${esc(c.need)}<br>배치 ${esc(c.have)}</span></span></li>`).join("")}</ul>
+   <h3>층별</h3><table class="pf"><tr><th>층</th><th>일반</th><th>확장</th><th>EV</th><th>경형</th><th>장애인</th><th>법정</th></tr>${s.per_floor.map(p=>`<tr><td>${p.floor}</td><td>${p.일반}</td><td>${p.확장}</td><td>${p.전기차}</td><td>${p.경형}</td><td>${p.장애인}</td><td><b>${p.legal}</b></td></tr>`).join("")}</table>
+   <h3>동선</h3><ul class="checks"><li><span class="o">·</span><span>경사로에서 평균 ${c.avg_drive}m · 가장 먼 구획 ${c.max_drive}m</span></li>
+   <li><span class="${c.dead_ends?"x":"o"}">·</span><span>막다른 차로 ${c.dead_ends}곳 (붙은 구획 ${c.dead_end_stalls}면) — 그림의 '회차'</span></li>
+   <li><span class="o">·</span><span>순환 고리 ${c.loops} · T자 ${c.t_junctions} · 십자 ${c.crossings}</span></li>
+   <li><span class="o">·</span><span>동선 감점 ${c.penalty}대분 (가중치 ${c.weight}) · 순위 점수 ${s.score}</span></li></ul>
+   <h3>파일</h3><ul class="files" id="files"></ul><button class="link" id="openOut">결과 폴더 열기</button><h3 style="margin-top:18px">진행 기록</h3>`;
+  side.insertBefore(div,$("#log"));
+  div.querySelectorAll(".fb .go").forEach(b=>b.onclick=()=>selectAlt(+b.dataset.i,true));
+}
+function files(fs,out){
+  const ul=$("#files");if(!ul)return;
+  ul.innerHTML=fs.map(f=>`<li><span title="${esc(f.name)}">${esc(f.name)}</span><span><a href="#" data-p="${esc(f.path)}" class="op">열기</a> · <a href="/files?dl=1&p=${encodeURIComponent(f.path)}">받기</a></span></li>`).join("");
+  ul.querySelectorAll(".op").forEach(a=>a.onclick=e=>{e.preventDefault();post("/api/openpath",JSON.stringify({p:a.dataset.p}),{"Content-Type":"application/json"})});
+  $("#openOut").onclick=()=>post("/api/openpath",JSON.stringify({p:out}),{"Content-Type":"application/json"});
+}
+</script>
+</body>
+</html>
