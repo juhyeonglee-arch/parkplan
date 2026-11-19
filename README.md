@@ -75,6 +75,15 @@ python -m parking_ai examples/예시_대지.dxf --floors 2   # 화면 없이 결
 
 `tests/dev/`에는 개발 중 쓰던 개별 실험 스크립트가 있습니다(자동 시험에는 들어가지 않음).
 
+## 웹 배포
+
+main의 시험이 통과하면 GitHub Actions가 **Hugging Face Spaces**(무료, 2코어)로 자동 배포합니다(`deploy/Dockerfile`, `.github/workflows/deploy.yml`).
+
+- 처음 한 번: Hugging Face 계정의 쓰기 토큰을 저장소 **Settings → Secrets and variables → Actions**에 Secret `HF_TOKEN`으로, Space 이름(예: `아이디/parkplan`)을 Variable `HF_SPACE`로 넣습니다. 토큰은 저장소 파일에 넣지 않습니다.
+- 웹 버전은 도면을 올려서 쓰고, 결과는 '받기'로 내려받습니다. 서버의 입력·결과 파일은 6시간 뒤 지웁니다.
+- 한 번에 한 사람의 탐색만 돕니다(같은 시간에 두 사람이 찾으면 뒤 사람은 기다려야 함).
+- 무료 Space는 오래 쓰지 않으면 잠들고, 다시 열 때 1분쯤 걸립니다.
+
 ## 작업 방식
 
 - 개선은 브랜치에서 하고 PR로 올립니다. PR에는 바뀐 것, 시험 결과, 확인 그림을 담습니다.

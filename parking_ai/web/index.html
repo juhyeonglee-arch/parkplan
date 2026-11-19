@@ -229,7 +229,8 @@ let SRC=null, RES=null, ALT=0, FLOOR=0, VIEW=null, timer=null, RAMPS=null, RSEL=
 const ROLES=[["site","대지경계"],["core","코어"],["ramp","경사로"],["obstacle","장애물"],["none","안 씀"]];
 const ROLE_STYLE={site:"fill:none;stroke:#111;stroke-width:1.4",core:"fill:#d9d9d9;stroke:#444;stroke-width:.8",ramp:"fill:#e7eefc;stroke:#2457d6;stroke-width:1",obstacle:"fill:#f2f2f2;stroke:#888;stroke-dasharray:4 3",none:"fill:none;stroke:#c7c7cc;stroke-width:.6"};
 
-fetch("/api/status").then(r=>r.json()).then(d=>{$("#ver").textContent="v"+d.version});
+let SERVER=false;
+fetch("/api/status").then(r=>r.json()).then(d=>{$("#ver").textContent="v"+d.version;SERVER=!!d.server});
 
 // ---------- 세그먼트·칩
 $$(".seg").forEach(g=>g.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;g.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));if(g.id==="floorSeg"){FLOOR=+b.dataset.v;draw()}}));
@@ -454,8 +455,9 @@ function stats(){
 }
 function files(fs,out){
   const ul=$("#files");if(!ul)return;
-  ul.innerHTML=fs.map(f=>`<li><span title="${esc(f.name)}">${esc(f.name)}</span><span><a href="#" data-p="${esc(f.path)}" class="op">열기</a> · <a href="/files?dl=1&p=${encodeURIComponent(f.path)}">받기</a></span></li>`).join("");
+  ul.innerHTML=fs.map(f=>`<li><span title="${esc(f.name)}">${esc(f.name)}</span><span>${SERVER?"":`<a href="#" data-p="${esc(f.path)}" class="op">열기</a> · `}<a href="/files?dl=1&p=${encodeURIComponent(f.path)}">받기</a></span></li>`).join("");
   ul.querySelectorAll(".op").forEach(a=>a.onclick=e=>{e.preventDefault();post("/api/openpath",JSON.stringify({p:a.dataset.p}),{"Content-Type":"application/json"})});
+  $("#openOut").hidden=SERVER;
   $("#openOut").onclick=()=>post("/api/openpath",JSON.stringify({p:out}),{"Content-Type":"application/json"});
 }
 </script>

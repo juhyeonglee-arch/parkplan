@@ -19,13 +19,33 @@ from . import VERSION, engine, export, io_input
 from .rules import Rules
 
 WEB = os.path.join(os.path.dirname(__file__), "web")
-HOME = os.path.join(os.path.expanduser("~"), "지하주차장")
+# 웹 서버로 배포할 때(PARKPLAN_SERVER=1): 모든 주소에서 받고, 결과는 PARKPLAN_HOME 에 두고, '폴더 열기'는 끈다.
+SERVER_MODE = bool(os.environ.get("PARKPLAN_SERVER"))
+HOME = os.environ.get("PARKPLAN_HOME") or os.path.join(os.path.expanduser("~"), "지하주차장")
 UPLOADS = os.path.join(HOME, "_입력")
 
 SOURCES = {}      # id → dict(path, src)
 JOB = {"state": "idle", "log": [], "progress": None, "results": None, "error": None, "stop": False,
        "out": None, "files": [], "src": None, "started": 0}
 LOCK = threading.Lock()
+
+
+def _cleanup_old(hours=6):
+    """서버 모드: 오래된 입력·결과 폴더를 지워 디스크를 비운다."""
+    import shutil
+    lim = time.time() - hours * 3600
+    for root in (HOME, UPLOADS):
+        if not os.path.isdir(root):
+            continue
+        for n in os.listdir(root):
+            p = os.path.join(root, n)
+            if p == UPLOADS:
+                continue
+            try:
+                if os.path.getmtime(p) < lim:
+                    shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
+            except OSError:
+                pass
 
 
 def _log(msg):
@@ -293,7 +313,7 @@ class H(BaseHTTPRequestHandler):
         if u.path == "/api/status":
             with LOCK:
                 d = dict(state=JOB["state"], log=JOB["log"][-200:], progress=JOB["progress"], error=JOB["error"],
-                         out=JOB["out"], files=JOB["files"], version=VERSION,
+                         out=JOB["out"], files=JOB["files"], version=VERSION, server=SERVER_MODE,
                          elapsed=round(time.time() - JOB["started"], 1) if JOB["started"] else 0)
                 q = parse_qs(u.query)
                 if JOB["state"] == "done" and q.get("full"):
@@ -346,6 +366,8 @@ class H(BaseHTTPRequestHandler):
                 return self._json(open_source(p))
             if u.path == "/api/run":
                 d = json.loads(self._body() or b"{}")
+                if SERVER_MODE:
+                    _cleanup_old()
                 with LOCK:
                     if JOB["state"] == "running":
                         return self._json(dict(error="이미 찾는 중입니다."), 409)
@@ -380,6 +402,8 @@ class H(BaseHTTPRequestHandler):
                     JOB["files"] = files
                 return self._json(dict(files=files))
             if u.path == "/api/openpath":
+                if SERVER_MODE:
+                    return self._json(dict(error="웹 버전에서는 '받기'로 내려받아 주세요."), 400)
                 d = json.loads(self._body() or b"{}")
                 p = os.path.normpath(d.get("p", ""))
                 if p.startswith(os.path.normpath(HOME)) and os.path.exists(p):
@@ -392,11 +416,11 @@ class H(BaseHTTPRequestHandler):
         self.send_error(404)
 
 
-def serve(port=8766, open_browser=True):
+def serve(port=8766, open_browser=True, host="127.0.0.1"):
     os.makedirs(HOME, exist_ok=True)
     for p in range(port, port + 20):
         try:
-            srv = ThreadingHTTPServer(("127.0.0.1", p), H)
+            srv = ThreadingHTTPServer((host, p), H)
             break
         except OSError:
             continue

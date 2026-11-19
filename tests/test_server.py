@@ -5,6 +5,7 @@ import socket
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 
 import pytest
@@ -65,3 +66,25 @@ def test_sample_run_export(server):
     assert d["state"] == "done", d.get("error")
     files = _post(server + "/api/export", b'{"alt": 0}', {"Content-Type": "application/json"})["files"]
     assert files
+
+
+def test_server_mode(tmp_path):
+    """웹 배포 모드: 모든 주소에서 받고, 폴더 열기는 막는다."""
+    port = _free_port()
+    env = dict(os.environ, PYTHONIOENCODING="utf-8", PARKPLAN_SERVER="1", PARKPLAN_HOME=str(tmp_path), PORT=str(port))
+    p = subprocess.Popen([sys.executable, "-m", "parking_ai", "--no-browser", "--host", "127.0.0.1"], cwd=ROOT, env=env)
+    url = f"http://127.0.0.1:{port}"
+    try:
+        for _ in range(60):
+            try:
+                with urllib.request.urlopen(url + "/api/status", timeout=2) as r:
+                    st = json.loads(r.read())
+                break
+            except Exception:
+                time.sleep(0.5)
+        assert st["server"] is True
+        with pytest.raises(urllib.error.HTTPError):
+            _post(url + "/api/openpath", json.dumps({"p": str(tmp_path)}).encode(), {"Content-Type": "application/json"})
+    finally:
+        p.terminate()
+        p.wait(10)
