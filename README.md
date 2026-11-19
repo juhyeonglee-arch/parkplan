@@ -2,7 +2,7 @@
 
 **버전 v1.6 (2026-11-04)**
 
-[![시험](https://github.com/jh050720-coder/parkplan/actions/workflows/test.yml/badge.svg)](https://github.com/jh050720-coder/parkplan/actions/workflows/test.yml)
+[![시험](https://github.com/juhyeonglee-arch/parkplan/actions/workflows/test.yml/badge.svg)](https://github.com/juhyeonglee-arch/parkplan/actions/workflows/test.yml)
 
 대지(지하 외벽선)·코어·경사로를 그린 도면 한 장을 넣으면, 주차장법 기준을 지키면서 **법정 주차대수가 가장 많은 지하주차장 배치**를 찾아 줍니다. 결과는 캐드 도면(DXF), 라이노 모델(3dm), 평면 그림(PNG), 층별 대수표(CSV)로 받을 수 있습니다.
 
